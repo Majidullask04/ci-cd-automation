@@ -1,0 +1,64 @@
+pipeline {
+    agent any
+    
+    tools {
+        nodejs 'nodejs26'
+    }
+    
+    environment {
+        SCANNER_HOME = tool 'sonar-scanner'
+    }
+
+    stages {
+        stage('git-checkout') {
+            steps {
+                git branch: 'local-dev', url: 'https://github.com/jaiswaladi246/3-Tier-DevSecOps-Mega-Project.git'
+            }
+        }
+        
+        stage('frontent-compilation') {
+            steps {
+                dir('client') {
+                    sh 'find . -name "*.js" -exec node --check {} +'
+               }
+            }
+        }
+        stage('backend-compilation') {
+            steps {
+                dir('api') {
+                    sh 'find . -name "*.js" -exec node --check {} +'
+               }
+            }
+        }
+        
+        stage('gitleaks') {
+            steps {
+                sh 'gitleaks detect --source ./client --exit-code 1'
+                sh 'gitleaks detect --source ./api --exit-code 1'
+            }
+        }
+        
+        stage('sonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('sonar') {
+                  sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=Nodejs-project \
+                  -Dsonar.projectKey=nodejs-project '''
+                }
+            }
+        }
+        
+        stage('Quality Gate check') {
+            steps {
+                timeout(time: 1, unit: 'HOURS') {
+                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-tocken'
+                }
+            }
+        }
+        
+        stage('Trivy FS Scan') {
+            steps {
+                sh 'trivy fs --format table -o fs-report.html .'
+            }
+        }
+    }
+}
