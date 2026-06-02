@@ -12,7 +12,7 @@ pipeline {
     stages {
         stage('git-checkout') {
             steps {
-                git branch: 'local-dev', url: 'https://github.com/jaiswaladi246/3-Tier-DevSecOps-Mega-Project.git'
+                git branch: 'main', url: 'https://github.com/jaiswaladi246/3-Tier-DevSecOps-Mega-Project.git'
             }
         }
         
@@ -58,6 +58,42 @@ pipeline {
         stage('Trivy FS Scan') {
             steps {
                 sh 'trivy fs --format table -o fs-report.html .'
+            }
+        }
+        
+        stage('Build-Tag & Push Backend docker image') {
+            steps {
+                script {
+                    withDockerRegistry(credentialsId: 'docker-id') {
+                        dir('api') {
+                         sh 'docker build -t majid04/backend:latest .'
+                         sh 'trivy image --format table -o backend-image-report.html majid04/backend:latest '
+                         sh 'docker push majid04/backend:latest'
+                      }
+                   }
+                }
+            }
+        }
+        
+        stage('Build-Tag & Push Frontent docker image') {
+            steps {
+                script {
+                    withDockerRegistry(credentialsId: 'docker-id') {
+                        dir('client') {
+                         sh 'docker build -t majid04/frontent:latest .'
+                         sh 'trivy image --format table -o frontent-image-report.html majid04/frontent:latest '
+                         sh 'docker push majid04/frontent:latest'
+                      }
+                   }
+                }
+            }
+        }
+        
+        stage('Docker Deploy Via Compose') {
+            steps {
+                script {
+                    sh 'docker compose up -d'
+                }
             }
         }
     }
