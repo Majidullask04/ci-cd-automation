@@ -1,0 +1,487 @@
+# 🚀 3-Tier DevSecOps Project on K3s with Jenkins, Argo CD, Prometheus & Grafana
+
+## 📌 Project Overview
+
+This project demonstrates a complete DevSecOps and GitOps workflow using:
+
+* GitHub
+* Jenkins
+* SonarQube
+* Gitleaks
+* Trivy
+* Docker
+* Docker Hub
+* Kubernetes (K3s)
+* Argo CD
+* Prometheus
+* Grafana
+* MySQL
+
+The application consists of:
+
+```text
+Frontend (React)
+        ↓
+Backend (Node.js)
+        ↓
+MySQL Database
+```
+
+---
+
+# 🏗️ Architecture
+
+```text
+Developer
+    ↓
+GitHub
+    ↓
+Jenkins Pipeline
+    ↓
+Gitleaks
+    ↓
+SonarQube
+    ↓
+Trivy
+    ↓
+Docker Build
+    ↓
+Docker Hub
+    ↓
+Kubernetes (K3s)
+    ↓
+Argo CD
+    ↓
+Prometheus
+    ↓
+Grafana
+```
+
+---
+
+# 📂 Project Structure
+
+```text
+project/
+│
+├── api/
+│
+├── client/
+│
+├── Jenkinsfile
+│
+├── k8s-prod/
+│   ├── backend.yaml
+│   ├── frontend.yaml
+│   ├── mysql.yaml
+│   └── ingress.yaml
+│
+└── README.md
+```
+
+---
+
+# ⚙️ K3s Installation
+
+Install K3s:
+
+```bash
+curl -sfL https://get.k3s.io | sh -
+```
+
+Check status:
+
+```bash
+sudo systemctl status k3s
+```
+
+Check nodes:
+
+```bash
+kubectl get nodes
+```
+
+---
+
+# 🔑 Jenkins Access to Kubernetes
+
+Create Jenkins kubeconfig:
+
+```bash
+sudo mkdir -p /var/lib/jenkins/.kube
+
+sudo cp /etc/rancher/k3s/k3s.yaml \
+/var/lib/jenkins/.kube/config
+
+sudo chown -R jenkins:jenkins \
+/var/lib/jenkins/.kube
+```
+
+Verify:
+
+```bash
+sudo su - jenkins
+
+kubectl get nodes
+```
+
+Expected:
+
+```text
+NAME     STATUS
+ubuntu   Ready
+```
+
+---
+
+# 🔍 Useful Kubernetes Commands
+
+Nodes:
+
+```bash
+kubectl get nodes
+```
+
+Pods:
+
+```bash
+kubectl get pods
+```
+
+All Resources:
+
+```bash
+kubectl get all
+```
+
+Namespace Resources:
+
+```bash
+kubectl get all -n dev
+```
+
+Services:
+
+```bash
+kubectl get svc
+```
+
+Deployments:
+
+```bash
+kubectl get deployments
+```
+
+StatefulSets:
+
+```bash
+kubectl get statefulsets
+```
+
+---
+
+# 🚀 Deploy Application
+
+Create namespace:
+
+```bash
+kubectl create namespace dev
+```
+
+Deploy:
+
+```bash
+kubectl apply -f k8s-prod/
+```
+
+Check deployment:
+
+```bash
+kubectl get all -n dev
+```
+
+---
+
+# 🔥 Troubleshooting Commands
+
+Describe Pod:
+
+```bash
+kubectl describe pod <pod-name> -n dev
+```
+
+Logs:
+
+```bash
+kubectl logs <pod-name> -n dev
+```
+
+Events:
+
+```bash
+kubectl get events -n dev
+```
+
+Restart Deployment:
+
+```bash
+kubectl rollout restart deployment backend -n dev
+
+kubectl rollout restart deployment frontend -n dev
+```
+
+Deployment Status:
+
+```bash
+kubectl rollout status deployment/backend -n dev
+
+kubectl rollout status deployment/frontend -n dev
+```
+
+---
+
+# 🐳 Docker Commands
+
+Build Backend:
+
+```bash
+docker build -t majid04/backend:latest .
+```
+
+Build Frontend:
+
+```bash
+docker build -t majid04/frontent:latest .
+```
+
+Push Backend:
+
+```bash
+docker push majid04/backend:latest
+```
+
+Push Frontend:
+
+```bash
+docker push majid04/frontent:latest
+```
+
+Pull Image:
+
+```bash
+docker pull majid04/backend:latest
+
+docker pull majid04/frontent:latest
+```
+
+Images:
+
+```bash
+docker images
+```
+
+Containers:
+
+```bash
+docker ps -a
+```
+
+---
+
+# 🔐 Jenkins Pipeline
+
+Pipeline Flow:
+
+```text
+Git Checkout
+     ↓
+Frontend Compilation
+     ↓
+Backend Compilation
+     ↓
+Gitleaks Scan
+     ↓
+SonarQube Analysis
+     ↓
+Quality Gate
+     ↓
+Trivy Scan
+     ↓
+Docker Build
+     ↓
+Docker Push
+     ↓
+Kubernetes Deploy
+```
+
+Deploy Stage:
+
+```groovy
+stage('Deploy To Kubernetes') {
+    steps {
+        sh 'kubectl apply -f k8s-prod/'
+    }
+}
+```
+
+---
+
+# 🔄 Argo CD Installation
+
+Create Namespace:
+
+```bash
+kubectl create namespace argocd
+```
+
+Install:
+
+```bash
+kubectl apply -n argocd \
+-f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+```
+
+Check Pods:
+
+```bash
+kubectl get pods -n argocd
+```
+
+Port Forward:
+
+```bash
+kubectl port-forward svc/argocd-server \
+-n argocd 8090:443
+```
+
+Access:
+
+```text
+https://localhost:8090
+```
+
+Get Password:
+
+```bash
+kubectl -n argocd get secret argocd-initial-admin-secret \
+-o jsonpath="{.data.password}" | base64 -d
+```
+
+Username:
+
+```text
+admin
+```
+
+---
+
+# 📊 Prometheus Installation
+
+Create Namespace:
+
+```bash
+kubectl create namespace monitoring
+```
+
+Add Repo:
+
+```bash
+helm repo add prometheus-community \
+https://prometheus-community.github.io/helm-charts
+
+helm repo update
+```
+
+Install:
+
+```bash
+helm install monitoring \
+prometheus-community/kube-prometheus-stack \
+-n monitoring
+```
+
+Check:
+
+```bash
+kubectl get pods -n monitoring
+```
+
+Prometheus UI:
+
+```bash
+kubectl port-forward \
+svc/monitoring-kube-prometheus-prometheus \
+-n monitoring 9090:9090
+```
+
+Open:
+
+```text
+http://localhost:9090
+```
+
+---
+
+# 📈 Grafana Installation
+
+Port Forward:
+
+```bash
+kubectl port-forward \
+svc/monitoring-grafana \
+-n monitoring 3000:80
+```
+
+Open:
+
+```text
+http://localhost:3000
+```
+
+Get Password:
+
+```bash
+kubectl get secret \
+-n monitoring monitoring-grafana \
+-o jsonpath="{.data.admin-password}" | base64 -d
+```
+
+Username:
+
+```text
+admin
+```
+
+---
+
+# 📌 Important Lessons Learned
+
+* Certificates open doors, but problem-solving creates opportunities.
+* Real-world projects require troubleshooting, debugging, and persistence.
+* Kubernetes deployment is more than running containers.
+* Jenkins and Kubernetes must be connected through kubeconfig.
+* Argo CD provides GitOps visibility and deployment management.
+* Prometheus collects metrics; Grafana visualizes them.
+* Learning happens through solving real problems, not just watching tutorials.
+
+---
+
+# 🎯 Future Improvements
+
+* Helm Charts
+* Traefik Ingress
+* TLS Certificates
+* Prometheus Alerts
+* Grafana Dashboards
+* Terraform
+* AWS EKS
+* GitOps Automation
+* Production Monitoring
+
+---
+
+# 💡 Day 2 Lesson
+
+"Certificates can open doors, but the real world rewards people who can solve problems. My goal is not to collect certificates. My goal is to build the skills needed to create solutions."
+
+🚀 Keep Learning. Keep Building. Keep Solving.

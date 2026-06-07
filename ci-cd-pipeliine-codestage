@@ -12,7 +12,7 @@ pipeline {
     stages {
         stage('git-checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/jaiswaladi246/3-Tier-DevSecOps-Mega-Project.git'
+                git branch: 'k3s-local', url: 'https://github.com/Majidullask04/3-Tier-DevSecOps-Mega-Project.git'
             }
         }
         
@@ -89,12 +89,11 @@ pipeline {
             }
         }
         
-        stage('Docker Deploy Via Compose') {
+        stage('Deploy To Kubernetes') {
             steps {
-                script {
-                    sh 'docker compose up -d'
+               sh 'kubectl apply -f k8s-prod/'
                 }
             }
         }
     }
-}
+
