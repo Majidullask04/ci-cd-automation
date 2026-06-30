@@ -325,6 +325,10 @@ stage('Deploy To Kubernetes') {
 ```
 
 ---
+#loki stack
+
+kubectl port-forward pod/loki-promtail-rzlr6 3101:3101 -n monitoring
+
 
 # 🔄 Argo CD Installation
 
